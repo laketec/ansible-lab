@@ -254,6 +254,28 @@ docker push laketec.azurecr.io/<containername>
 
 ## VS Code Setup
 
+The Containerlab extension for VS Code provides an integrated graphical interface for managing container-based network labs directly within your editor.
+
+  Key Features
+
+  - Topology Visualization: View your network topology as an interactive graph diagram, making it easier to understand complex multi-node designs
+  - Lab Management: Deploy, destroy, and inspect labs without leaving VS Code
+  - Node Interaction: Connect to lab nodes (routers, switches, hosts) via SSH directly from the editor
+  - YAML Support: Syntax highlighting and validation for .clab.yml topology files
+  - Status Monitoring: See which labs are running and the state of individual nodes
+
+  Why It's Important
+
+  1. Streamlined Workflow: Eliminates context-switching between terminal and editor - you can edit configs, deploy labs, and troubleshoot all in one place
+  2. Visual Understanding: Network topologies are inherently visual. Seeing a graph of spine/leaf connections (like your lab with 2 spines, 3 leaves, and 2 hosts) is
+  far more intuitive than reading YAML
+  3. Faster Troubleshooting: One-click SSH access to nodes speeds up debugging and testing
+  4. Lower Barrier to Entry: Makes containerlab more accessible to those less comfortable with CLI-only workflows
+  5. Ansible Integration: Pairs well with the Ansible extension - you can visualize your lab topology while developing and testing playbooks against it
+
+  For your demo environment with Aruba AOS-CX switches and Ubuntu hosts, this extension would let participants visually see the network topology and quickly connect
+  to any device for hands-on learning.
+
 ### Step 1: Install VS Code on Windows
 
 Download and install from: https://code.visualstudio.com/
