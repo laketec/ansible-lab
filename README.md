@@ -201,38 +201,36 @@ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 az login
 ```
 
-### Step 3: Login to Azure Container Registry
-
-Replace `<your-acr-name>` with your actual ACR name (e.g., `laketecacr`):
+### Step 3: OPTIONAL STEP Login to Azure Container Registry (If you have an Azure Login but not Required!)
 
 ```bash
 # Login to ACR
-az acr login --name <your-acr-name>
+az acr login --name laketec
 
 # Or use docker login directly
-docker login <your-acr-name>.azurecr.io
+docker login laketec.azurecr.io
 ```
 
 ### Step 4: Pull the AOS-CX Image
 
 ```bash
 # Pull from ACR
-docker pull <your-acr-name>.azurecr.io/aoscx:10.15.1005
+docker pull laketec.azurecr.io/aoscx:10.15.1005
 
 # Tag for local use (matches lab topology file)
-docker tag <your-acr-name>.azurecr.io/aoscx:10.15.1005 aoscx:10.15.1005
+docker tag laketec.azurecr.io/aoscx:10.15.1005 aoscx:10.15.1005
 ```
 
 ### Step 5: Pull the Ubuntu SSH Image
 
 ```bash
-docker pull <your-acr-name>.azurecr.io/ubuntu-ssh:24.04
-docker tag <your-acr-name>.azurecr.io/ubuntu-ssh:24.04 ubuntu-ssh:24.04
+docker pull laketec.azurecr.io/ubuntu-ssh:24.04
+docker tag laketec.azurecr.io/ubuntu-ssh:24.04 ubuntu-ssh:24.04
 ```
 
-### Uploading Images to ACR (Admin Only)
+### Uploading Images to Azure Container Registry (ACR, Azure Admins Only)
 
-If you need to upload the AOS-CX image to your ACR:
+If you need to upload the an image to your ACR:
 
 ```bash
 # Create ACR (if not exists)
@@ -247,13 +245,9 @@ az acr credential show --name <your-acr-name>
 # Login to ACR
 az acr login --name <your-acr-name>
 
-# Tag and push AOS-CX image
-docker tag aoscx:10.15.1005 <your-acr-name>.azurecr.io/aoscx:10.15.1005
-docker push <your-acr-name>.azurecr.io/aoscx:10.15.1005
-
-# Tag and push Ubuntu SSH image
-docker tag ubuntu-ssh:24.04 <your-acr-name>.azurecr.io/ubuntu-ssh:24.04
-docker push <your-acr-name>.azurecr.io/ubuntu-ssh:24.04
+# Tag and push a new image
+docker tag <containername> laketec.azurecr.io/<containername>
+docker push laketec.azurecr.io/<containername>
 ```
 
 ---
