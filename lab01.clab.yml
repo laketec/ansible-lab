@@ -1,0 +1,34 @@
+name: lab01
+
+topology:
+  kinds:
+    aruba_aoscx:
+      image: aoscx:10.15.1005
+  nodes:
+    spine1:
+      kind: aruba_aoscx
+    spine2:
+      kind: aruba_aoscx
+    leaf1:
+      kind: aruba_aoscx
+    leaf2:
+      kind: aruba_aoscx
+    leaf3:
+      kind: aruba_aoscx
+    host1:
+      kind: linux
+      image: ubuntu-ssh:24.04
+    host2:
+      kind: linux
+      image: ubuntu-ssh:24.04
+  links:
+    - endpoints: ["spine1:eth48", "spine2:eth48"]
+    - endpoints: ["spine1:eth47", "spine2:eth46"] 
+    - endpoints: ["spine1:eth1", "leaf1:eth48"]
+    - endpoints: ["spine1:eth2", "leaf2:eth48"]
+    - endpoints: ["spine1:eth3", "leaf3:eth48"]
+    - endpoints: ["spine2:eth1", "leaf1:eth47"]
+    - endpoints: ["spine2:eth2", "leaf2:eth47"]
+    - endpoints: ["spine2:eth3", "leaf3:eth47"]
+    - endpoints: ["leaf1:eth1", "host1:eth1"]
+    - endpoints: ["leaf2:eth1", "host2:eth1"]

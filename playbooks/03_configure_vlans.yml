@@ -1,0 +1,65 @@
+---
+# =============================================================================
+# DEMO STEP 3: Configure VLANs Across All Switches
+# =============================================================================
+# This playbook demonstrates bulk VLAN configuration using CLI
+# Shows: Creating multiple VLANs consistently across all switches
+# Run: ansible-playbook playbooks/03_configure_vlans.yml
+# =============================================================================
+
+- name: "STEP 3: Configure VLANs on AOS-CX Switches"
+  hosts: aoscx_switches
+  gather_facts: false
+  connection: network_cli
+  
+  vars_files:
+    - ../group_vars/aoscx_switches.yml
+  
+  tasks:
+    - name: "Display VLANs to be configured"
+      ansible.builtin.debug:
+        msg: "Configuring {{ demo_vlans | length }} VLANs on {{ inventory_hostname }}"
+        
+    - name: "Create VLANs using CLI"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - name {{ item.name }}
+          - description {{ item.description }}
+        parents:
+          - vlan {{ item.id }}
+      loop: "{{ demo_vlans }}"
+      loop_control:
+        label: "VLAN {{ item.id }} - {{ item.name }}"
+        
+    - name: "Verify VLANs were created"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - show vlan
+      register: vlan_output
+      
+    - name: "Display VLAN verification"
+      ansible.builtin.debug:
+        msg: "{{ vlan_output.stdout_lines[0] }}"
+
+- name: "Summary"
+  hosts: localhost
+  gather_facts: false
+  
+  vars_files:
+    - ../group_vars/aoscx_switches.yml
+    
+  tasks:
+    - name: "Configuration complete"
+      ansible.builtin.debug:
+        msg: |
+          
+          ================================================================
+                          VLAN CONFIGURATION COMPLETE
+          ================================================================
+          
+          VLANs configured on {{ groups["aoscx_switches"] | length }} switches:
+          {% for vlan in demo_vlans %}
+            - VLAN {{ vlan.id }}: {{ vlan.name }}
+          {% endfor %}
+          
+          ================================================================

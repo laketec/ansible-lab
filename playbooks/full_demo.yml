@@ -1,0 +1,86 @@
+---
+# =============================================================================
+# FULL DEMO: Run All Configuration Steps
+# =============================================================================
+# This master playbook runs all demo steps in sequence
+# Run: ansible-playbook playbooks/full_demo.yml
+# =============================================================================
+
+- name: "FULL DEMO - Starting Laketec Ansible Automation Demo"
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "Demo introduction"
+      ansible.builtin.debug:
+        msg: |
+          
+          ╔══════════════════════════════════════════════════════════════════╗
+          ║                                                                  ║
+          ║         LAKETEC ANSIBLE AUTOMATION DEMO                          ║
+          ║         Automating AOS-CX Network Configuration                  ║
+          ║                                                                  ║
+          ╠══════════════════════════════════════════════════════════════════╣
+          ║                                                                  ║
+          ║  This demo will configure:                                       ║
+          ║    • VLANs across all switches                                   ║
+          ║    • SNMPv3 monitoring (SHA + AES)                               ║
+          ║    • Centralized Syslog                                          ║
+          ║    • NTP time synchronization                                    ║
+          ║    • DNS client settings                                         ║
+          ║    • Configuration backups                                       ║
+          ║                                                                  ║
+          ╚══════════════════════════════════════════════════════════════════╝
+
+- name: "Step 1 - Test Connectivity"
+  import_playbook: 01_test_connectivity.yml
+
+- name: "Step 2 - Gather Facts"
+  import_playbook: 02_gather_facts.yml
+
+- name: "Step 3 - Configure VLANs"
+  import_playbook: 03_configure_vlans.yml
+
+- name: "Step 4 - Configure SNMPv3"
+  import_playbook: 04_configure_snmpv3.yml
+
+- name: "Step 5 - Configure Syslog"
+  import_playbook: 05_configure_syslog.yml
+
+- name: "Step 6 - Configure NTP"
+  import_playbook: 06_configure_ntp.yml
+
+- name: "Step 7 - Backup Configurations"
+  import_playbook: 07_backup_configs.yml
+
+- name: "Step 8 - Configure DNS"
+  import_playbook: 09_configure_dns.yml
+
+- name: "Demo Complete"
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "Final summary"
+      ansible.builtin.debug:
+        msg: |
+          
+          ╔══════════════════════════════════════════════════════════════════╗
+          ║                                                                  ║
+          ║              DEMO COMPLETE - ALL STEPS SUCCESSFUL                ║
+          ║                                                                  ║
+          ╠══════════════════════════════════════════════════════════════════╣
+          ║                                                                  ║
+          ║  Summary of what was automated:                                  ║
+          ║                                                                  ║
+          ║  ✓ Tested connectivity to 5 switches                             ║
+          ║  ✓ Gathered device facts and inventory                           ║
+          ║  ✓ Created 4 VLANs consistently across all switches              ║
+          ║  ✓ Configured SNMPv3 with SHA authentication + AES privacy       ║
+          ║  ✓ Set up centralized syslog to 10.0.0.1                         ║
+          ║  ✓ Configured NTP time synchronization                           ║
+          ║  ✓ Backed up all configurations with timestamps                  ║
+          ║  ✓ Configured DNS client settings                                ║
+          ║                                                                  ║
+          ║  Time saved: What would take 30+ minutes manually                ║
+          ║              was done in seconds with Ansible\!                   ║
+          ║                                                                  ║
+          ╚══════════════════════════════════════════════════════════════════╝

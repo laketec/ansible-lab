@@ -1,0 +1,68 @@
+---
+# =============================================================================
+# DEMO STEP 2: Gather Facts from All Switches
+# =============================================================================
+# This playbook demonstrates Ansible ability to collect device information
+# Shows: hostname, serial, MAC, firmware, uptime, CPU/memory utilization
+# Run: ansible-playbook playbooks/02_gather_facts.yml
+# =============================================================================
+
+- name: "STEP 2: Gather Facts from AOS-CX Switches"
+  hosts: aoscx_switches
+  gather_facts: false
+  connection: network_cli
+  
+  tasks:
+    - name: "Gather system information"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - show system
+      register: system_info
+      
+    - name: "Parse system facts"
+      ansible.builtin.set_fact:
+        device_serial: "{{ system_info.stdout[0] | regex_search('Chassis Serial Nbr\\s+:\\s+(\\S+)', '\\1') | first | default('N/A') }}"
+        device_mac: "{{ system_info.stdout[0] | regex_search('Base MAC Address\\s+:\\s+(\\S+)', '\\1') | first | default('N/A') }}"
+        device_version: "{{ system_info.stdout[0] | regex_search('AOS-CX Version\\s+:\\s+(\\S+)', '\\1') | first | default('N/A') }}"
+        device_product: "{{ system_info.stdout[0] | regex_search('Product Name\\s+:\\s+(\\S+)', '\\1') | first | default('N/A') }}"
+        device_uptime: "{{ system_info.stdout[0] | regex_search('Up Time\\s+:\\s+(.+?)\\s{2,}', '\\1') | first | default('N/A') }}"
+        device_cpu: "{{ system_info.stdout[0] | regex_search('CPU Util \\(%\\)\\s+:\\s+(\\d+)', '\\1') | first | default('N/A') }}"
+        device_memory: "{{ system_info.stdout[0] | regex_search('Memory Usage \\(%\\)\\s+:\\s+(\\d+)', '\\1') | first | default('N/A') }}"
+
+    - name: "Display device facts"
+      ansible.builtin.debug:
+        msg: |
+          
+          ┌────────────────────────────────────────────────────────────────┐
+          │  {{ inventory_hostname | upper }}  ({{ ansible_host }})
+          ├────────────────────────────────────────────────────────────────┤
+          │  Serial Number:   {{ device_serial }}
+          │  Base MAC:        {{ device_mac }}
+          │  Product:         {{ device_product }}
+          │  AOS-CX Version:  {{ device_version }}
+          │  Uptime:          {{ device_uptime }}
+          │  CPU Usage:       {{ device_cpu }}%
+          │  Memory Usage:    {{ device_memory }}%
+          └────────────────────────────────────────────────────────────────┘
+
+- name: "Generate Inventory Report"
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: "Display inventory summary"
+      ansible.builtin.debug:
+        msg: |
+          
+          ╔════════════════════════════════════════════════════════════════╗
+          ║              LAKETEC DEMO - INVENTORY SUMMARY                  ║
+          ╠════════════════════════════════════════════════════════════════╣
+          ║                                                                ║
+          ║   Total Managed Switches:  {{ groups["aoscx_switches"] | length }}                               ║
+          ║   ├── Spine Switches:      {{ groups["spines"] | length }}                               ║
+          ║   └── Leaf Switches:       {{ groups["leafs"] | length }}                               ║
+          ║                                                                ║
+          ║   Spine Hosts: {{ groups["spines"] | join(", ") }}
+          ║   Leaf Hosts:  {{ groups["leafs"] | join(", ") }}
+          ║                                                                ║
+          ╚════════════════════════════════════════════════════════════════╝

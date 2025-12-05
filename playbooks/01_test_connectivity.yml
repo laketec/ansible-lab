@@ -1,0 +1,82 @@
+---
+# =============================================================================
+# DEMO STEP 1: Test Connectivity to All Switches
+# =============================================================================
+# This playbook verifies Ansible can connect to all switches in our inventory
+# Run: ansible-playbook playbooks/01_test_connectivity.yml
+# =============================================================================
+
+- name: "STEP 1: Test Connectivity to AOS-CX Switches"
+  hosts: aoscx_switches
+  gather_facts: false
+  connection: network_cli
+  
+  vars:
+    ansible_network_os: arubanetworks.aoscx.aoscx
+    ansible_become: true
+    ansible_become_method: enable
+  
+  tasks:
+    - name: "Ping test - Verify network reachability"
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        timeout: 10
+      delegate_to: localhost
+      
+    - name: "SSH test - Verify CLI access"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - show system
+      register: cli_test
+      
+    - name: "HTTPS test - Verify port 443 is open"
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: 443
+        timeout: 10
+      delegate_to: localhost
+      
+    - name: "API test - Login to REST API"
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}/rest/v10.04/login"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+        validate_certs: false
+        status_code: 200
+      delegate_to: localhost
+      register: login_response
+      
+    - name: "API test - Get system info via REST"
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}/rest/v10.04/system?attributes=hostname,software_version,platform_name"
+        method: GET
+        headers:
+          Cookie: "{{ login_response.cookies_string }}"
+        validate_certs: false
+        status_code: 200
+      delegate_to: localhost
+      register: api_test
+      
+    - name: "API test - Logout from REST API"
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}/rest/v10.04/logout"
+        method: POST
+        headers:
+          Cookie: "{{ login_response.cookies_string }}"
+        validate_certs: false
+        status_code: 200
+      delegate_to: localhost
+      
+    - name: "Display connection status"
+      ansible.builtin.debug:
+        msg: |
+          SUCCESS: {{ inventory_hostname }} ({{ ansible_host }})
+          ├── SSH/CLI:  OK
+          ├── REST API: OK
+          ├── Hostname: {{ api_test.json.hostname }}
+          ├── Platform: {{ api_test.json.platform_name }}
+          └── Software: {{ api_test.json.software_version }}

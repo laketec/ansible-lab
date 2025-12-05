@@ -1,0 +1,128 @@
+---
+# =============================================================================
+# RESET TO STOCK: Remove All Demo Configurations
+# =============================================================================
+# This playbook removes ALL configurations added by the demo playbooks.
+# Uses CLI for reliability - no REST API session issues.
+#
+# Run: ansible-playbook playbooks/reset_to_stock.yml
+# =============================================================================
+
+- name: "RESET: Remove All Demo Configurations"
+  hosts: aoscx_switches
+  gather_facts: false
+  connection: network_cli
+  
+  vars:
+    vlans_to_remove:
+      - 100
+      - 200
+      - 300
+      - 400
+    snmpv3_user_to_remove: "laketec_monitor"
+    syslog_server_to_remove: "10.0.0.1"
+    ntp_servers_to_remove:
+      - "10.0.0.1"
+      - "pool.ntp.org"
+    dns_servers_to_remove:
+      - "8.8.8.8"
+      - "8.8.4.4"
+    dns_domain_to_remove: "laketec.local"
+  
+  tasks:
+    - name: "Starting reset on {{ inventory_hostname }}"
+      ansible.builtin.debug:
+        msg: "Removing all demo configurations..."
+
+    # Remove VLANs
+    - name: "VLAN Cleanup - Remove demo VLANs"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - no vlan {{ item }}
+      loop: "{{ vlans_to_remove }}"
+      loop_control:
+        label: "VLAN {{ item }}"
+      ignore_errors: true
+
+    # Remove SNMPv3
+    - name: "SNMPv3 Cleanup - Remove SNMPv3 user"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - no snmpv3 user {{ snmpv3_user_to_remove }}
+      ignore_errors: true
+      
+    - name: "SNMPv3 Cleanup - Remove SNMP system settings"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - no snmp-server system-location
+          - no snmp-server system-contact
+      ignore_errors: true
+
+    # Remove Syslog
+    - name: "Syslog Cleanup - Remove syslog server"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - no logging {{ syslog_server_to_remove }}
+      ignore_errors: true
+      
+    - name: "Syslog Cleanup - Reset logging origin-id"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - no logging origin-id
+      ignore_errors: true
+
+    # Remove NTP
+    - name: "NTP Cleanup - Remove NTP servers"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - no ntp server {{ item }}
+      loop: "{{ ntp_servers_to_remove }}"
+      loop_control:
+        label: "NTP {{ item }}"
+      ignore_errors: true
+
+    # Remove DNS
+    - name: "DNS Cleanup - Remove DNS servers"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - no ip dns server-address {{ item }}
+      loop: "{{ dns_servers_to_remove }}"
+      loop_control:
+        label: "DNS {{ item }}"
+      ignore_errors: true
+      
+    - name: "DNS Cleanup - Remove DNS domain name"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - no ip dns domain-name {{ dns_domain_to_remove }}
+      ignore_errors: true
+
+    # Save config
+    - name: "Save configuration"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - write memory
+      
+    - name: "Reset complete for {{ inventory_hostname }}"
+      ansible.builtin.debug:
+        msg: "{{ inventory_hostname }} reset complete"
+
+- name: "Summary"
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "Reset complete"
+      ansible.builtin.debug:
+        msg: |
+          
+          ================================================================
+                   RESET TO STOCK CONFIGURATION COMPLETE
+          ================================================================
+          
+          All switches have been reset\!
+          
+          Removed: VLANs, SNMPv3, Syslog, NTP, DNS configs
+          
+          Switches are now ready for a fresh demo run\!
+          
+          ================================================================

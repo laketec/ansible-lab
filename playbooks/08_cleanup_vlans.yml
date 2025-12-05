@@ -1,0 +1,56 @@
+---
+# =============================================================================
+# DEMO STEP 8: Cleanup/Remove Demo VLANs (Rollback)
+# =============================================================================
+# This playbook removes the demo VLANs - shows idempotency and rollback
+# Shows: How Ansible can easily undo changes
+# Run: ansible-playbook playbooks/08_cleanup_vlans.yml
+# =============================================================================
+
+- name: "STEP 8: Remove Demo VLANs from AOS-CX Switches"
+  hosts: aoscx_switches
+  gather_facts: false
+  connection: network_cli
+  
+  vars_files:
+    - ../group_vars/aoscx_switches.yml
+  
+  tasks:
+    - name: "Display VLANs to be removed"
+      ansible.builtin.debug:
+        msg: "Removing {{ demo_vlans | length }} demo VLANs from {{ inventory_hostname }}"
+        
+    - name: "Remove demo VLANs using CLI"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - no vlan {{ item.id }}
+      loop: "{{ demo_vlans }}"
+      loop_control:
+        label: "VLAN {{ item.id }} - {{ item.name }}"
+      ignore_errors: true
+
+    - name: "Verify VLANs were removed"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - show vlan
+      register: vlan_output
+      
+    - name: "Display VLAN verification"
+      ansible.builtin.debug:
+        msg: "{{ vlan_output.stdout_lines[0] }}"
+
+- name: "Summary"
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: "Cleanup complete"
+      ansible.builtin.debug:
+        msg: |
+          
+          ================================================================
+                          VLAN CLEANUP COMPLETE
+          ================================================================
+          
+          Removed demo VLANs from {{ groups["aoscx_switches"] | length }} switches
+          
+          ================================================================

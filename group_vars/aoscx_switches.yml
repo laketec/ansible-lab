@@ -1,0 +1,59 @@
+---
+# =============================================================================
+# Laketec Ansible Demo - Global Variables for AOS-CX Switches
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# SNMPv3 Configuration
+# -----------------------------------------------------------------------------
+snmpv3_user: laketec_monitor
+snmpv3_auth_pass: LaketecAuth2024!
+snmpv3_priv_pass: LaketecPriv2024!
+snmpv3_auth_protocol: sha
+snmpv3_priv_protocol: aes
+
+# -----------------------------------------------------------------------------
+# Syslog Configuration
+# -----------------------------------------------------------------------------
+syslog_server: 10.0.0.1
+syslog_facility: local6
+syslog_severity: info
+
+# -----------------------------------------------------------------------------
+# NetFlow/IPFIX Configuration  
+# -----------------------------------------------------------------------------
+netflow_collector: 10.0.0.1
+netflow_port: 2055
+netflow_interface: 1/1/48
+
+# -----------------------------------------------------------------------------
+# Demo VLANs to Configure
+# -----------------------------------------------------------------------------
+demo_vlans:
+  - id: 100
+    name: LAKETEC_MGMT
+    description: "Management VLAN"
+  - id: 200
+    name: LAKETEC_DATA
+    description: "User Data VLAN"
+  - id: 300
+    name: LAKETEC_VOICE
+    description: "Voice VLAN"
+  - id: 400
+    name: LAKETEC_IOT
+    description: "IoT Devices VLAN"
+
+# -----------------------------------------------------------------------------
+# NTP Servers
+# -----------------------------------------------------------------------------
+ntp_servers:
+  - 10.0.0.1
+  - pool.ntp.org
+
+# -----------------------------------------------------------------------------
+# DNS Configuration
+# -----------------------------------------------------------------------------
+dns_servers:
+  - 8.8.8.8
+  - 8.8.4.4
+dns_domain: laketec.local

@@ -1,0 +1,69 @@
+---
+# =============================================================================
+# DEMO STEP 9: Configure DNS Client Settings
+# =============================================================================
+# This playbook configures DNS servers and domain for name resolution
+# Shows: Network service configuration for hostname resolution
+#
+# Run: ansible-playbook playbooks/09_configure_dns.yml
+# =============================================================================
+
+- name: "STEP 9: Configure DNS on AOS-CX Switches"
+  hosts: aoscx_switches
+  gather_facts: false
+  connection: network_cli
+  
+  vars_files:
+    - ../group_vars/aoscx_switches.yml
+  
+  tasks:
+    - name: "Configure DNS domain name"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - ip dns domain-name {{ dns_domain }}
+          
+    - name: "Configure DNS servers"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - ip dns server-address {{ item }}
+      loop: "{{ dns_servers }}"
+      
+    - name: "Verify DNS configuration"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - show ip dns
+      register: dns_output
+      
+    - name: "Display DNS configuration"
+      ansible.builtin.debug:
+        msg: "{{ dns_output.stdout_lines[0] }}"
+
+- name: "Summary"
+  hosts: localhost
+  gather_facts: false
+  
+  vars_files:
+    - ../group_vars/aoscx_switches.yml
+    
+  tasks:
+    - name: "DNS configuration summary"
+      ansible.builtin.debug:
+        msg: |
+          
+          ================================================================
+                      DNS CONFIGURATION COMPLETE
+          ================================================================
+          
+          Domain Name: {{ dns_domain }}
+          
+          DNS Servers:
+          {% for server in dns_servers %}
+            - {{ server }}
+          {% endfor %}
+          
+          DNS enables:
+            - Hostname resolution for management
+            - FQDN-based ACLs and policies
+            - Simplified troubleshooting
+          
+          ================================================================

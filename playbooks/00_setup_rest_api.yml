@@ -1,0 +1,108 @@
+---
+# =============================================================================
+# DEMO STEP 0: Enable REST API on All Switches
+# =============================================================================
+# This playbook MUST be run first before any other playbooks!
+# It enables the REST API interface on AOS-CX switches via SSH/CLI
+# Run: ansible-playbook playbooks/00_setup_rest_api.yml
+# =============================================================================
+
+- name: "STEP 0: Enable REST API on AOS-CX Switches"
+  hosts: aoscx_switches
+  gather_facts: false
+  connection: network_cli
+  
+  vars:
+    ansible_network_os: arubanetworks.aoscx.aoscx
+    ansible_become: true
+    ansible_become_method: enable
+  
+  tasks:
+    - name: "Check if REST API is already enabled"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - show running-config | include https-server
+      register: rest_status
+      ignore_errors: true
+      
+    - name: "Display current REST API status"
+      ansible.builtin.debug:
+        msg: "{{ rest_status.stdout_lines | default(['REST API status unknown']) }}"
+        
+    - name: "Enable REST API interface"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - https-server rest access-mode read-write
+          - https-server vrf default
+      register: rest_config
+      
+    - name: "Verify REST API is now enabled"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - show running-config | include https-server
+      register: rest_verify
+      
+    - name: "Display REST API configuration result"
+      ansible.builtin.debug:
+        msg: |
+          REST API enabled on {{ inventory_hostname }} ({{ ansible_host }})
+          Configuration: {{ rest_verify.stdout_lines | default([]) }}
+          
+    - name: "Wait for REST API to become available"
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}"
+        port: 443
+        timeout: 30
+      delegate_to: localhost
+      
+    - name: "Login to REST API and get session cookie"
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}/rest/v10.04/login"
+        method: POST
+        body_format: form-urlencoded
+        body:
+          username: "{{ ansible_user }}"
+          password: "{{ ansible_password }}"
+        validate_certs: false
+        status_code: 200
+      delegate_to: localhost
+      register: login_response
+      ignore_errors: true
+      
+    - name: "Test REST API connectivity with session"
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}/rest/v10.04/system?attributes=hostname,software_version"
+        method: GET
+        headers:
+          Cookie: "{{ login_response.cookies_string }}"
+        validate_certs: false
+        status_code: 200
+      delegate_to: localhost
+      register: api_test
+      when: login_response is succeeded
+      ignore_errors: true
+      
+    - name: "Logout from REST API"
+      ansible.builtin.uri:
+        url: "https://{{ ansible_host }}/rest/v10.04/logout"
+        method: POST
+        headers:
+          Cookie: "{{ login_response.cookies_string }}"
+        validate_certs: false
+        status_code: 200
+      delegate_to: localhost
+      when: login_response is succeeded
+      ignore_errors: true
+      
+    - name: "Display REST API test result"
+      ansible.builtin.debug:
+        msg: >
+          {% if api_test is defined and api_test.status == 200 %}
+          SUCCESS: REST API is working on {{ inventory_hostname }}
+          Hostname: {{ api_test.json.hostname | default('N/A') }}
+          Software: {{ api_test.json.software_version | default('N/A') }}
+          {% elif login_response is failed %}
+          FAILED: Could not login to REST API on {{ inventory_hostname }} - check credentials
+          {% else %}
+          FAILED: REST API test failed on {{ inventory_hostname }}
+          {% endif %}

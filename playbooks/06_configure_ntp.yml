@@ -1,0 +1,67 @@
+---
+# =============================================================================
+# DEMO STEP 6: Configure NTP Time Synchronization
+# =============================================================================
+# This playbook configures NTP servers for accurate time synchronization
+# Shows: System time management critical for logging and certificates
+#
+# Run: ansible-playbook playbooks/06_configure_ntp.yml
+# =============================================================================
+
+- name: "STEP 6: Configure NTP on AOS-CX Switches"
+  hosts: aoscx_switches
+  gather_facts: false
+  connection: network_cli
+  
+  vars_files:
+    - ../group_vars/aoscx_switches.yml
+  
+  tasks:
+    - name: "Configure NTP servers"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - ntp server {{ item }} iburst
+      loop: "{{ ntp_servers }}"
+      
+    - name: "Enable NTP"
+      arubanetworks.aoscx.aoscx_config:
+        lines:
+          - ntp enable
+          
+    - name: "Verify NTP configuration"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - show ntp status
+      register: ntp_output
+      
+    - name: "Display NTP status"
+      ansible.builtin.debug:
+        msg: "{{ ntp_output.stdout_lines[0] }}"
+
+- name: "Summary"
+  hosts: localhost
+  gather_facts: false
+  
+  vars_files:
+    - ../group_vars/aoscx_switches.yml
+    
+  tasks:
+    - name: "NTP configuration summary"
+      ansible.builtin.debug:
+        msg: |
+          
+          ================================================================
+                      NTP CONFIGURATION COMPLETE
+          ================================================================
+          
+          Configured NTP Servers:
+          {% for server in ntp_servers %}
+            - {{ server }}
+          {% endfor %}
+          
+          Accurate time is critical for:
+            - Log correlation and forensics
+            - Certificate validation
+            - Scheduled tasks and automation
+          
+          ================================================================

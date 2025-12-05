@@ -1,0 +1,78 @@
+---
+# =============================================================================
+# DEMO STEP 7: Backup All Switch Configurations
+# =============================================================================
+# This playbook backs up running configs to local files with timestamps
+# Shows: Configuration management and disaster recovery preparation
+# Run: ansible-playbook playbooks/07_backup_configs.yml
+# =============================================================================
+
+- name: "STEP 7: Backup Configurations from AOS-CX Switches"
+  hosts: aoscx_switches
+  gather_facts: false
+  connection: network_cli
+  
+  vars:
+    ansible_network_os: arubanetworks.aoscx.aoscx
+    ansible_become: true
+    ansible_become_method: enable
+    backup_dir: "/root/laketec-ansible-demo/backups"
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+  
+  tasks:
+    - name: "Ensure backup directory exists"
+      ansible.builtin.file:
+        path: "{{ backup_dir }}"
+        state: directory
+        mode: '0755'
+      delegate_to: localhost
+      run_once: true
+
+    - name: "Retrieve running configuration"
+      arubanetworks.aoscx.aoscx_command:
+        commands:
+          - show running-config
+      register: running_config
+      
+    - name: "Save configuration to backup file"
+      ansible.builtin.copy:
+        content: "{{ running_config.stdout[0] }}"
+        dest: "{{ backup_dir }}/{{ inventory_hostname }}_{{ timestamp }}.cfg"
+        mode: '0644'
+      delegate_to: localhost
+      
+    - name: "Display backup status"
+      ansible.builtin.debug:
+        msg: "✓ Backed up {{ inventory_hostname }} to {{ inventory_hostname }}_{{ timestamp }}.cfg"
+
+- name: "Summary and Backup List"
+  hosts: localhost
+  gather_facts: false
+  
+  vars:
+    backup_dir: "/root/laketec-ansible-demo/backups"
+    
+  tasks:
+    - name: "List all backup files"
+      ansible.builtin.find:
+        paths: "{{ backup_dir }}"
+        patterns: "*.cfg"
+      register: backup_files
+      
+    - name: "Backup complete"
+      ansible.builtin.debug:
+        msg: |
+          
+          ════════════════════════════════════════════════════════════════
+                            CONFIGURATION BACKUP COMPLETE
+          ════════════════════════════════════════════════════════════════
+          
+          Backed up {{ groups['aoscx_switches'] | length }} switches
+          Backup location: {{ backup_dir }}
+          
+          Backup Files:
+          {% for file in backup_files.files | sort(attribute='path') %}
+            • {{ file.path | basename }} ({{ file.size }} bytes)
+          {% endfor %}
+          
+          ════════════════════════════════════════════════════════════════
